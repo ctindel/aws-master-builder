@@ -1,0 +1,121 @@
+swagger: "2.0"
+info:
+  description: "This is an example product/order inventory API "
+  version: "1.0.0"
+  title: "ctindel MB2"
+  termsOfService: "http://swagger.io/terms/"
+  contact:
+    email: "ctindel@amazon.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "store.ctindel-aws.com"
+basePath: "/v1"
+tags:
+- name: "product"
+  description: "Operations on products"
+- name: "order"
+  description: "Access to orders"
+schemes:
+- "https"
+- "http"
+paths:
+  /order:
+    post:
+      tags:
+      - "order"
+      summary: "Add a new order"
+      description: ""
+      operationId: "addOrder"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "New Order Request"
+        required: true
+        schema:
+          $ref: "#/definitions/Order"
+      responses:
+        405:
+          description: "Invalid input"
+  /order/findByStatus:
+    get:
+      tags:
+      - "order"
+      summary: "Finds Order by status"
+      description: "Multiple status values can be provided with comma separated strings"
+      operationId: "findOrdersByStatus"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "status"
+        in: "query"
+        description: "Status values that need to be considered for filter"
+        required: true
+        type: "array"
+        items:
+          type: "string"
+          enum:
+          - "available"
+          - "pending"
+          - "sold"
+          default: "available"
+        collectionFormat: "multi"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Order"
+        400:
+          description: "Invalid status value"
+definitions:
+  Order:
+    type: "object"
+    required:
+    - "customerName"
+    - "products"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      customerName:
+        type: "string"
+        example: "Joe Cool"
+      orderDate:
+        type: "string"
+        format: "date-time"
+      products:
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            productId:
+              type: "string"
+              format: "uuid"
+            count: 
+              type: "integer"
+      status:
+        type: "string"
+        description: "Order Status"
+        enum:
+        - "placed"
+        - "approved"
+        - "delivered"
+  ApiResponse:
+    type: "object"
+    properties:
+      code:
+        type: "integer"
+        format: "int32"
+      type:
+        type: "string"
+      message:
+        type: "string"
+externalDocs:
+  description: "Find out more about Swagger"
+  url: "http://swagger.io"

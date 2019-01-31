@@ -1,0 +1,190 @@
+{
+  "AWSTemplateFormatVersion":"2010-09-09",
+  "Parameters":{
+    "AWSAccountId":{
+      "Type":"String",
+      "Description":"AWS Account ID"
+    },
+    "Route53HostedZoneName":{
+      "Type":"String",
+      "Description":"Route53 Hosted Zone Name"
+    },
+    "ACMCertARN":{
+      "Type":"String",
+      "Description":"ACM Cert ARN"
+    }
+  },
+  "Mappings":{
+  },
+  "Resources":{
+    "APIGatewayServiceRole":{
+      "Type":"AWS::IAM::Role",
+      "Properties":{
+        "AssumeRolePolicyDocument":{
+          "Statement":[
+            {
+              "Effect":"Allow",
+              "Principal":{
+                "Service":[
+                  "apigateway.amazonaws.com",
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action":[
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path":"/",
+        "Policies":[
+          {
+            "PolicyName":{
+              "Fn::Join":[
+                "",
+                [
+                  {
+                    "Ref":"AWS::StackName"
+                  },
+                  "-policy"
+                ]
+              ]
+            },
+            "PolicyDocument":{
+              "Statement":[
+                {
+                  "Effect":"Allow",
+                  "Action":[
+                    "dynamodb:*",
+                    "lambda:*",
+                    "logs:*"
+                  ],
+                  "Resource":"*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "APIGatewayLogsGroup":{
+      "Type":"AWS::Logs::LogGroup",
+      "Properties":{
+        "LogGroupName": {
+          "Fn::Join":[
+            "",
+            [
+              {
+                "Ref":"AWS::StackName"
+              },
+              "-api"
+            ]
+          ]
+        },
+        "RetentionInDays":14
+      }
+    },
+    "APIGatewayAccount":{
+      "Type" : "AWS::ApiGateway::Account",
+      "Properties" : {
+        "CloudWatchRoleArn": {
+          "Fn::GetAtt":[
+            "APIGatewayServiceRole",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "APIGateway": {
+      "Type" : "AWS::ApiGateway::RestApi",
+      "DependsOn":"APIGatewayAccount",
+      "Properties" : {  
+        "Name" : {
+          "Fn::Join":[
+            "",
+            [
+              { "Ref":"AWS::StackName" },
+              "-api"
+            ]
+          ]
+        },
+        "EndpointConfiguration" : {
+          "Types" : [ "EDGE" ]
+        }
+      }
+    },
+    "APIGatewayDomainName" : {
+      "Type" : "AWS::ApiGateway::DomainName",
+      "Properties": {
+        "CertificateArn": { "Ref":"ACMCertARN" },
+        "DomainName": {
+          "Fn::Join":[
+            "",
+            [
+              { "Ref":"AWS::StackName" },
+              "-api.",
+              { "Ref":"Route53HostedZoneName" }
+            ]
+          ]
+        },
+        "EndpointConfiguration" : {
+          "Types" : [ "EDGE" ]
+        }
+      }
+    },
+    "APIMapping" : {
+      "Type" : "AWS::ApiGateway::BasePathMapping",
+      "Properties" : {
+        "DomainName": {
+          "Fn::Join":[
+            "",
+            [
+              { "Ref":"AWS::StackName" },
+              "-api.",
+              { "Ref":"Route53HostedZoneName" }
+            ]
+          ]
+        },
+        "RestApiId" : { "Ref" : "APIGateway" }
+      }
+    },
+    "APIGatewayCertificate": { 
+      "Type" : "AWS::ApiGateway::ClientCertificate"
+    },
+    "APIGatewayServiceProxyResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "i",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : {"Fn::GetAtt": ["APIGateway", "RootResourceId"]}
+      }
+    },
+    "APIGatewayRoute53Record": {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "HostedZoneName" : {
+          "Ref":"Route53HostedZoneName"
+        },
+        "Name" : {
+          "Fn::Join":[
+            "",
+            [
+              { "Ref":"AWS::StackName" },
+              "-api.",
+              { "Ref":"Route53HostedZoneName" }
+            ]
+          ]
+        },
+        "Type" : "A",
+        "AliasTarget" : {
+          "HostedZoneName": { "Ref":"Route53HostedZoneName" },
+          "DNSName": {"Fn::GetAtt": ["APIGatewayDomainName", "DistributionDomainName"]},
+          "EvaluateTargetHealth": "false"
+        }
+      }
+    }
+  },
+  "Outputs":{
+  }
+}
