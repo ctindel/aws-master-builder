@@ -113,13 +113,6 @@
         }
       }
     },
-    "APIGatewayProdStage": {
-      "Type" : "AWS::ApiGateway::Stage",
-      "Properties" : {  
-        "RestApiId" : { "Ref" : "APIGateway" },
-        "StageName" : "prod"
-      }
-    },
     "APIGatewayDomainName" : {
       "Type" : "AWS::ApiGateway::DomainName",
       "Properties": {
@@ -139,30 +132,84 @@
         }
       }
     },
+    "APIGatewayProdDeployment": {
+      "Type" : "AWS::ApiGateway::Deployment",
+      "DependsOn": [ "APIGatewayServiceProxyGetProductByIdMethod" ], 
+      "Properties" : {  
+        "RestApiId" : { "Ref" : "APIGateway" },
+        "Description" : "prod",
+        "StageName": "prod"
+      }
+    },
     "APIMapping" : {
       "Type" : "AWS::ApiGateway::BasePathMapping",
+      "DependsOn":["APIGatewayProdDeployment", "APIGatewayDomainName"],
       "Properties" : {
-        "DomainName": {
-          "Fn::Join":[
-            "",
-            [
-              { "Ref":"AWS::StackName" },
-              "-api.",
-              { "Ref":"Route53HostedZoneName" }
-            ]
-          ]
-        },
+        "DomainName": { "Ref": "APIGatewayDomainName" },
         "RestApiId" : { "Ref" : "APIGateway" },
         "Stage" : "prod"
       }
     },
-    "APIGatewayServiceProxyResource": {
+    "APIGatewayServiceProxyProductResource": {
       "Type" : "AWS::ApiGateway::Resource",
       "DependsOn":"APIGateway",
       "Properties" : {
-        "PathPart": "i",
+        "PathPart": "product",
         "RestApiId": { "Ref" : "APIGateway" },
         "ParentId" : {"Fn::GetAtt": ["APIGateway", "RootResourceId"]}
+      }
+    },
+    "APIGatewayServiceProxyProductProductIdResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "{productId}",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : { "Ref" : "APIGatewayServiceProxyProductResource" }
+      }
+    },
+    "APIGatewayServiceProxyGetProductByIdMethod": {
+      "Type" : "AWS::ApiGateway::Method",
+      "Properties" : {
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ResourceId": { "Ref" : "APIGatewayServiceProxyProductProductIdResource" },
+        "HttpMethod": "GET",
+        "AuthorizationType": "NONE",
+        "MethodResponses": [
+          { 
+            "ResponseModels": {"application/json":"Empty"},
+            "StatusCode" : 200 
+          }
+        ],
+        "Integration": {
+          "Type": "AWS",
+          "IntegrationHttpMethod": "POST",
+          "Credentials": { "Fn::GetAtt":[ "APIGatewayServiceRole", "Arn" ] },
+          "PassthroughBehavior": "WHEN_NO_TEMPLATES",
+          "Uri": {
+            "Fn::Join":[
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref":"AWS::Region"
+                },
+                ":dynamodb:action/GetItem"
+              ]
+            ]
+          },
+          "RequestTemplates": {
+            "application/json": "{ \"TableName\": \"Product\", \"Key\": { \"id\": { \"S\": \"$input.params('productId')\" } } }"
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": 200,
+              "ResponseTemplates": {
+                "application/json": "{\"id\": \"$input.path('$.Item.id.S')\", \"description\": \"$input.path('$.Item.description.S')\", \"numReviews\": \"$input.path('$.Item.numReviews.N')\" }"
+              }
+            }
+          ]
+        }
       }
     },
     "APIGatewayRoute53Record": {
