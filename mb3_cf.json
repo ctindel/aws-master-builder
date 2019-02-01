@@ -113,6 +113,13 @@
         }
       }
     },
+    "APIGatewayProdStage": {
+      "Type" : "AWS::ApiGateway::Stage",
+      "Properties" : {  
+        "RestApiId" : { "Ref" : "APIGateway" },
+        "StageName" : "prod"
+      }
+    },
     "APIGatewayDomainName" : {
       "Type" : "AWS::ApiGateway::DomainName",
       "Properties": {
@@ -145,11 +152,9 @@
             ]
           ]
         },
-        "RestApiId" : { "Ref" : "APIGateway" }
+        "RestApiId" : { "Ref" : "APIGateway" },
+        "Stage" : "prod"
       }
-    },
-    "APIGatewayCertificate": { 
-      "Type" : "AWS::ApiGateway::ClientCertificate"
     },
     "APIGatewayServiceProxyResource": {
       "Type" : "AWS::ApiGateway::Resource",
@@ -164,7 +169,13 @@
       "Type" : "AWS::Route53::RecordSet",
       "Properties" : {
         "HostedZoneName" : {
-          "Ref":"Route53HostedZoneName"
+          "Fn::Join":[
+            "",
+            [
+              { "Ref":"Route53HostedZoneName" },
+              "."
+            ]
+          ]
         },
         "Name" : {
           "Fn::Join":[
@@ -178,7 +189,7 @@
         },
         "Type" : "A",
         "AliasTarget" : {
-          "HostedZoneName": { "Ref":"Route53HostedZoneName" },
+          "HostedZoneId" : {"Fn::GetAtt": ["APIGatewayDomainName", "DistributionHostedZoneId"]},
           "DNSName": {"Fn::GetAtt": ["APIGatewayDomainName", "DistributionDomainName"]},
           "EvaluateTargetHealth": "false"
         }
