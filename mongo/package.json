@@ -1,0 +1,18 @@
+{
+  "name": "ctindel-mb3-mongo",
+  "main": "mongo_data.js",
+  "dependencies": {
+    "async": "~0.9.0",
+    "faker": "^4.1.0",
+    "mongoose": "^5.4.0"
+  },
+  "scripts": {
+    "clean": "rimraf node_modules tsd_typings",
+    "clean-install": "npm run clean && npm install",
+    "clean-start": "npm run clean && npm start",
+    "data_changer": "NODE_ENV=dev ./node_modules/nodemon/bin/nodemon.js mongo_data.js",
+    "start": "npm run data_changer",
+    "startmongo": "~ctindel/mongodb-osx-x86_64-4.0.5/bin/mongod --dbpath /Users/ctindel/db/ctindel-mb3",
+    "startmongoclient": "~ctindel/mongodb-osx-x86_64-4.0.5/bin/mongo localhost:27017/ctindel-mb3"
+  }
+}
