@@ -14,6 +14,8 @@ const MONGO_OPTS = {
 
 const NUM_ITEMS = 5;
 const INTERVAL = 10; // 10 ms
+const INVENTORY_START_SIZE = 20
+const INVENTORY_BATCH_SIZE = 5
 
 var productSchema = new mongoose.Schema({
     numReviews: {
@@ -23,6 +25,12 @@ var productSchema = new mongoose.Schema({
         default: 0
     },
     description: { type: String, trim:true },
+    inventory: {
+        type: Number,
+        get: v => Math.round(v),
+        set: v => Math.round(v),
+        default: INVENTORY_START_SIZE
+    },
 },
 { collection: 'product' }
 );
@@ -115,6 +123,15 @@ const addProductReview = async () => {
     );
 }
 
+const addProductInventory = async () => {
+    console.log('ADD PRODUCT INVENTORY');
+    // Get a random product
+    var productCount = await ProductModel.countDocuments();
+    var skipRecords = randomIntFromInterval(0, productCount -1);
+    var product = await ProductModel.findOne().skip(skipRecords).exec();
+    product.inventory += INVENTORY_BATCH_SIZE
+    await product.save()
+}
 const addOrder = async () => {
     console.log('ADD ORDER');
     // First we'll get between 1 and 3 random products
@@ -186,15 +203,16 @@ const dislikeProductReview = async () => {
 
 // This will run every second
 const doAction = async() => {
-    // We'll generate a random number between 0 and 9 to decide our action
+    // We'll generate a random number between 0 and 10 to decide our action
     //  0: Add a product
     //  1: Add a product review
     //  2: Add an order
     //  3: Change an order status
-    //  4-6: Like a product review
-    //  7-9: Dislike a product review
+    //  4: Add product inventory
+    //  5-7: Like a product review
+    //  8-10: Dislike a product review
 
-    var randomNumber = randomIntFromInterval(0,9);
+    var randomNumber = randomIntFromInterval(0,10);
     if (0 == randomNumber) {
         await addProduct();
     } else if (1 == randomNumber) {
@@ -203,9 +221,11 @@ const doAction = async() => {
         await addOrder();
     } else if (3 == randomNumber) {
         await changeOrderStatus();
-    } else if (randomNumber >= 4 && randomNumber <= 6) {
+    } else if (4 == randomNumber) {
+        await addProductInventory();
+    } else if (randomNumber >= 5 && randomNumber <= 7) {
         await likeProductReview();
-    } else if (randomNumber >= 7 && randomNumber <= 9) {
+    } else if (randomNumber >= 8 && randomNumber <= 10) {
         await dislikeProductReview();
     } else {
         throw new Exception("Not a valid option");
