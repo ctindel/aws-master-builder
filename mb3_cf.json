@@ -67,6 +67,53 @@
         ]
       }
     },
+    "DMSServiceRole":{
+      "Type":"AWS::IAM::Role",
+      "Properties":{
+        "AssumeRolePolicyDocument":{
+          "Statement":[
+            {
+              "Effect":"Allow",
+              "Principal":{
+                "Service":[
+                  "dms.amazonaws.com"
+                ]
+              },
+              "Action":[
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path":"/",
+        "Policies":[
+          {
+            "PolicyName":{
+              "Fn::Join":[
+                "",
+                [
+                  {
+                    "Ref":"AWS::StackName"
+                  },
+                  "-policy"
+                ]
+              ]
+            },
+            "PolicyDocument":{
+              "Statement":[
+                {
+                  "Effect":"Allow",
+                  "Action":[
+                    "dynamodb:*"
+                  ],
+                  "Resource":"*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
     "APIGatewayLogsGroup":{
       "Type":"AWS::Logs::LogGroup",
       "Properties":{
