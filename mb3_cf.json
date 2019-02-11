@@ -12,6 +12,29 @@
     "ACMCertARN":{
       "Type":"String",
       "Description":"ACM Cert ARN"
+    },
+    "ESVersion" : {
+      "Description" : "Elastic Search Version",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid ES version."
+    },
+    "ESInstanceType" : {
+      "Description" : "Elastic Search node instance type",
+      "Type" : "String",
+      "Default" : "i3.xlarge.elasticsearch",
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+    "ESInstanceCount" : {
+      "Description" : "Number of instances to start",
+      "Default": "3",
+      "MinValue": "2",
+      "MaxValue": "12",
+      "Type" : "Number"
+    },
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type" : "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription" : "Must be the name of an existing EC2 KeyPair."
     }
   },
   "Mappings":{
@@ -256,6 +279,92 @@
               }
             }
           ]
+        }
+      }
+    },
+    "ESRole":{
+      "Type":"AWS::IAM::Role",
+      "Properties":{
+        "AssumeRolePolicyDocument":{
+          "Statement":[
+            {
+              "Effect":"Allow",
+              "Principal":{
+                "Service":[
+                  "ec2.amazonaws.com",
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action":[
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path":"/",
+        "Policies":[
+          {
+            "PolicyName" : { "Fn::Join":[ "", [ { "Ref":"AWS::StackName" }, "-es-service-policy" ] ] },
+            "PolicyDocument":{
+              "Statement":[
+                {
+                  "Effect":"Allow",
+                  "Action": "es:*", 
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ESInstanceProfile":{
+      "Type":"AWS::IAM::InstanceProfile",
+      "Properties":{
+        "Path":"/",
+        "Roles":[
+          {
+            "Ref":"ESRole"
+          }
+        ]
+      }
+    },
+    "ElasticsearchDomain": {
+      "Type": "AWS::Elasticsearch::Domain",
+      "Properties": {
+        "DomainName" : { "Fn::Join":[ "", [ { "Ref":"AWS::StackName" }, "-es2" ] ] },
+        "ElasticsearchVersion" : { "Ref":"ESVersion" },
+        "ElasticsearchClusterConfig": {
+          "DedicatedMasterEnabled": "true",
+          "InstanceCount": { "Ref" : "ESInstanceCount" },
+          "ZoneAwarenessEnabled": "true",
+          "InstanceType": { "Ref" : "ESInstanceType" },
+          "DedicatedMasterType": "m4.large.elasticsearch",
+          "DedicatedMasterCount": "3"
+        },
+        "EBSOptions": {
+          "EBSEnabled": true,
+          "Iops": 0,
+          "VolumeSize": 20,
+          "VolumeType": "gp2"
+        },
+        "SnapshotOptions": {
+          "AutomatedSnapshotStartHour": "0"
+        },
+        "AccessPolicies": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": { "Fn::GetAtt" : ["ESRole", "Arn"] }
+            },
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-2:284628898641:domain/ctindel-mb3-es/*"
+          }]
+        },
+        "AdvancedOptions": {
+          "indices.fielddata.cache.size": "",
+          "rest.action.multi.allow_explicit_index": "true"
         }
       }
     },

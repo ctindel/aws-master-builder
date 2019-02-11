@@ -1,5 +1,9 @@
 [
     {"ParameterKey":"AWSAccountId","ParameterValue":"284628898641"},
     {"ParameterKey":"Route53HostedZoneName","ParameterValue":"ctindel-aws.com"},
-    {"ParameterKey":"ACMCertARN","ParameterValue":" arn:aws:acm:us-east-1:284628898641:certificate/816c4c2c-529a-404c-864c-12d8056d8c21"}
+    {"ParameterKey":"ACMCertARN","ParameterValue":" arn:aws:acm:us-east-1:284628898641:certificate/816c4c2c-529a-404c-864c-12d8056d8c21"},
+    {"ParameterKey":"KeyName","ParameterValue":"ctindel_amazon"},
+    {"ParameterKey":"ESVersion","ParameterValue":"6.4"},
+    {"ParameterKey":"ESInstanceType","ParameterValue":"m4.xlarge.elasticsearch"},
+    {"ParameterKey":"ESInstanceCount","ParameterValue":"2"}
 ]
