@@ -12,7 +12,6 @@ provider:
   region: ${opt:region}
   runtime: nodejs8.10
   endpointType: REGIONAL
-  role: arn:aws:iam::284628898641:role/ctindel-mb3-ESRole-16F7M3S07SVHV
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -51,7 +50,7 @@ resources:
 
 functions:
   product-dynamodb-es:
-    handler: handler.handler
+    handler: es_handler.handler
     environment:
       ES_ENDPOINT: https://search-ctindel-mb3-es2-i7lb3hukvelz4cvqlqumms2qly.us-east-2.es.amazonaws.com
       INDEX: product
