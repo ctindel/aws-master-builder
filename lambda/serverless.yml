@@ -67,7 +67,7 @@ resources:
 
 functions:
   product-mdb-dynamodb:
-    handler: ddb_handler.handler
+    handler: mdb_ddb_sync_handler.js.handler
     environment:
       TARGET_DDB_TABLE: ctindel-mb3-product
     events:
@@ -77,7 +77,7 @@ functions:
          batchSize: 1
          startingPosition: TRIM_HORIZON
   review-mdb-dynamodb:
-    handler: ddb_handler.handler
+    handler: mdb_ddb_sync_handler.js.handler
     environment:
       TARGET_DDB_TABLE: ctindel-mb3-review
     events:
@@ -87,7 +87,7 @@ functions:
          batchSize: 1
          startingPosition: TRIM_HORIZON
   order-mdb-dynamodb:
-    handler: ddb_handler.handler
+    handler: mdb_ddb_sync_handler.js.handler
     environment:
       TARGET_DDB_TABLE: ctindel-mb3-order
     events:
@@ -97,7 +97,7 @@ functions:
          batchSize: 1
          startingPosition: TRIM_HORIZON
   product-dynamodb-es:
-    handler: es_handler.handler
+    handler: ddb_es_sync_handler.js.handler
     environment:
       ES_ENDPOINT: https://search-ctindel-mb3-es2-i7lb3hukvelz4cvqlqumms2qly.us-east-2.es.amazonaws.com
       INDEX: product
@@ -110,7 +110,7 @@ functions:
          batchSize: 1
          startingPosition: TRIM_HORIZON
   review-dynamodb-es:
-    handler: es_handler.handler
+    handler: ddb_es_sync_handler.js.handler
     environment:
       ES_ENDPOINT: https://search-ctindel-mb3-es2-i7lb3hukvelz4cvqlqumms2qly.us-east-2.es.amazonaws.com
       INDEX: review
@@ -123,7 +123,7 @@ functions:
          batchSize: 1
          startingPosition: TRIM_HORIZON
   order-dynamodb-es:
-    handler: es_handler.handler
+    handler: ddb_es_sync_handler.js.handler
     environment:
       ES_ENDPOINT: https://search-ctindel-mb3-es2-i7lb3hukvelz4cvqlqumms2qly.us-east-2.es.amazonaws.com
       INDEX: order
