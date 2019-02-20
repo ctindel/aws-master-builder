@@ -282,7 +282,7 @@
         }
       }
     },
-    "ESRole":{
+    "LambdaRole":{
       "Type":"AWS::IAM::Role",
       "Properties":{
         "AssumeRolePolicyDocument":{
@@ -311,6 +311,21 @@
                   "Effect":"Allow",
                   "Action": "es:*", 
                   "Resource": "*"
+                },
+                {
+                  "Effect":"Allow",
+                  "Action": "lambda:*", 
+                  "Resource": "*"
+                },
+                {
+                  "Effect":"Allow",
+                  "Action": "logs:*", 
+                  "Resource": "*"
+                },
+                {
+                  "Effect":"Allow",
+                  "Action": "dynamodb:*", 
+                  "Resource": "*"
                 }
               ]
             }
@@ -324,7 +339,7 @@
         "Path":"/",
         "Roles":[
           {
-            "Ref":"ESRole"
+            "Ref":"LambdaRole"
           }
         ]
       }
@@ -356,7 +371,7 @@
           "Statement": [{
             "Effect": "Allow",
             "Principal": {
-              "AWS": { "Fn::GetAtt" : ["ESRole", "Arn"] }
+              "AWS": { "Fn::GetAtt" : ["LambdaRole", "Arn"] }
             },
             "Action": "es:*",
             "Resource": "arn:aws:es:us-east-2:284628898641:domain/ctindel-mb3-es/*"

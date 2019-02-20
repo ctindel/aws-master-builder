@@ -1,0 +1,137 @@
+service: ctindel-mb3-dynamodb-es
+
+frameworkVersion: ">=1.1.0 <2.0.0"
+
+# Note that you need to provide subnetIds for your private and public subnets
+# And you need to configure a VPC s3 endpoint or else the lambda running in the
+#  VPC won't be able to access s3.
+#  https://aws.amazon.com/blogs/aws/new-vpc-endpoint-for-amazon-s3/
+# Update the bucket names as appropriate also
+provider:
+  name: aws
+  region: ${opt:region}
+  runtime: nodejs8.10
+  endpointType: REGIONAL
+  role: arn:aws:iam::284628898641:role/ctindel-mb3-LambdaRole-1F7IE8EVP8E2W
+
+resources:
+  Resources:
+    ProductDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      #DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ctindel-mb3-product
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+    ReviewDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      #DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ctindel-mb3-review
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+    OrderDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      #DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ctindel-mb3-order
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+
+functions:
+  product-mdb-dynamodb:
+    handler: ddb_handler.handler
+    environment:
+      TARGET_DDB_TABLE: ctindel-mb3-product
+    events:
+      - stream:
+         type: dynamodb
+         arn: arn:aws:dynamodb:us-east-2:284628898641:table/product/stream/2019-02-20T00:31:50.611
+         batchSize: 1
+         startingPosition: TRIM_HORIZON
+  review-mdb-dynamodb:
+    handler: ddb_handler.handler
+    environment:
+      TARGET_DDB_TABLE: ctindel-mb3-review
+    events:
+      - stream:
+         type: dynamodb
+         arn: arn:aws:dynamodb:us-east-2:284628898641:table/review/stream/2019-02-20T01:42:00.005
+         batchSize: 1
+         startingPosition: TRIM_HORIZON
+  order-mdb-dynamodb:
+    handler: ddb_handler.handler
+    environment:
+      TARGET_DDB_TABLE: ctindel-mb3-order
+    events:
+      - stream:
+         type: dynamodb
+         arn: arn:aws:dynamodb:us-east-2:284628898641:table/order/stream/2019-02-20T01:42:34.065
+         batchSize: 1
+         startingPosition: TRIM_HORIZON
+  product-dynamodb-es:
+    handler: es_handler.handler
+    environment:
+      ES_ENDPOINT: https://search-ctindel-mb3-es2-i7lb3hukvelz4cvqlqumms2qly.us-east-2.es.amazonaws.com
+      INDEX: product
+      TYPE: _doc
+    events:
+      - stream:
+         type: dynamodb
+         arn:
+           Fn::GetAtt: [ ProductDynamoDbTable, StreamArn ]
+         batchSize: 1
+         startingPosition: TRIM_HORIZON
+  review-dynamodb-es:
+    handler: es_handler.handler
+    environment:
+      ES_ENDPOINT: https://search-ctindel-mb3-es2-i7lb3hukvelz4cvqlqumms2qly.us-east-2.es.amazonaws.com
+      INDEX: review
+      TYPE: _doc
+    events:
+      - stream:
+         type: dynamodb
+         arn:
+           Fn::GetAtt: [ ReviewDynamoDbTable, StreamArn ]
+         batchSize: 1
+         startingPosition: TRIM_HORIZON
+  order-dynamodb-es:
+    handler: es_handler.handler
+    environment:
+      ES_ENDPOINT: https://search-ctindel-mb3-es2-i7lb3hukvelz4cvqlqumms2qly.us-east-2.es.amazonaws.com
+      INDEX: order
+      TYPE: _doc
+    events:
+      - stream:
+         type: dynamodb
+         arn:
+           Fn::GetAtt: [ OrderDynamoDbTable, StreamArn ]
+         batchSize: 1
+         startingPosition: TRIM_HORIZON
