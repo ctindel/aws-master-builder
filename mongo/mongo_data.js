@@ -4,9 +4,11 @@ const mongoose = require('mongoose');
 const faker = require('faker');
 
 const MONGO_OPTS = {
-    uri: 'mongodb://localhost',
+    uri: 'mongodb://localhost:27017',
     db: 'ctindel-mb3',
     options: {
+        user: "ctindel",
+        pass: "ctindel",
         useNewUrlParser: true,
         keepAlive: 300000,
     }
@@ -236,7 +238,7 @@ const doAction = async() => {
 }
 
 mongoose.connect(
-    MONGO_OPTS.uri + '/' + MONGO_OPTS.db, MONGO_OPTS.options
+    MONGO_OPTS.uri + '/' + MONGO_OPTS.db, MONGO_OPTS.options,
 );
 
 doAction();
