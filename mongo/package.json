@@ -10,8 +10,7 @@
     "clean": "rimraf node_modules tsd_typings",
     "clean-install": "npm run clean && npm install",
     "clean-start": "npm run clean && npm start",
-    "data_changer": "NODE_ENV=dev ./node_modules/nodemon/bin/nodemon.js mongo_data.js",
-    "start": "npm run data_changer",
+    "start": "node mongo_data",
     "startmongo": "~ctindel/mongodb-osx-x86_64-4.0.5/bin/mongod --dbpath /Users/ctindel/db/ctindel-mb3",
     "startmongoclient": "~ctindel/mongodb-osx-x86_64-4.0.5/bin/mongo localhost:27017/ctindel-mb3"
   }
