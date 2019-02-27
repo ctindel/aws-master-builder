@@ -121,6 +121,8 @@ const addProductReview = async () => {
             'numStars' : randomIntFromInterval(1, 5)
         }
     );
+    product.numReviews += 1
+    await product.save()
 }
 
 const addProductInventory = async () => {

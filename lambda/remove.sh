@@ -1,3 +1,3 @@
 #!/bin/bash
 
-serverless remove --stage dev --region us-east-2
+serverless remove --stage prod --region us-east-2

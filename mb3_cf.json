@@ -238,6 +238,78 @@
         "ParentId" : { "Ref" : "APIGatewayServiceProxyProductResource" }
       }
     },
+    "APIGatewayServiceProxyProductProductIdReviewResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "review",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : { "Ref" : "APIGatewayServiceProxyProductProductIdResource" }
+      }
+    },
+    "APIGatewayServiceProxyProductProductIdReviewsResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "reviews",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : { "Ref" : "APIGatewayServiceProxyProductProductIdResource" }
+      }
+    },
+    "APIGatewayServiceProxyReviewResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "review",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : {"Fn::GetAtt": ["APIGateway", "RootResourceId"]}
+      }
+    },
+    "APIGatewayServiceProxyReviewReviewIdResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "{reviewId}",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : { "Ref" : "APIGatewayServiceProxyReviewResource" }
+      }
+    },
+    "APIGatewayServiceProxyReviewReviewIdLikeResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "like",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : { "Ref" : "APIGatewayServiceProxyReviewReviewIdResource" }
+      }
+    },
+    "APIGatewayServiceProxyReviewReviewIdDislikeResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "dislike",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : { "Ref" : "APIGatewayServiceProxyReviewReviewIdResource" }
+      }
+    },
+    "APIGatewayServiceProxyOrderResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "order",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : {"Fn::GetAtt": ["APIGateway", "RootResourceId"]}
+      }
+    },
+    "APIGatewayServiceProxyOrderOrderIdResource": {
+      "Type" : "AWS::ApiGateway::Resource",
+      "DependsOn":"APIGateway",
+      "Properties" : {
+        "PathPart": "{orderId}",
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ParentId" : { "Ref" : "APIGatewayServiceProxyOrderResource" }
+      }
+    },
     "APIGatewayServiceProxyGetProductByIdMethod": {
       "Type" : "AWS::ApiGateway::Method",
       "Properties" : {
@@ -269,13 +341,322 @@
             ]
           },
           "RequestTemplates": {
-            "application/json": "{ \"TableName\": \"Product\", \"Key\": { \"id\": { \"S\": \"$input.params('productId')\" } } }"
+            "application/json": "{ \"TableName\": \"ctindel-mb3-product\", \"Key\": { \"id\": { \"S\": \"$input.params('productId')\" } } }"
           },
           "IntegrationResponses": [
             {
               "StatusCode": 200,
               "ResponseTemplates": {
-                "application/json": "{\"id\": \"$input.path('$.Item.id.S')\", \"description\": \"$input.path('$.Item.description.S')\", \"numReviews\": \"$input.path('$.Item.numReviews.N')\" }"
+                "application/json": "{\"id\": \"$input.path('$.Item.id.S')\", \"description\": \"$input.path('$.Item.description.S')\", \"numReviews\": \"$input.path('$.Item.numReviews.N')\", \"inventory\": \"$input.path('$.Item.inventory.N')\" }"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "APIGatewayServiceProxyGetReviewsByProductIdMethod": {
+      "Type" : "AWS::ApiGateway::Method",
+      "Properties" : {
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ResourceId": { "Ref" : "APIGatewayServiceProxyProductProductIdReviewsResource" },
+        "HttpMethod": "GET",
+        "AuthorizationType": "NONE",
+        "MethodResponses": [
+          { 
+            "ResponseModels": {"application/json":"Empty"},
+            "StatusCode" : 200 
+          }
+        ],
+        "Integration": {
+          "Type": "AWS",
+          "IntegrationHttpMethod": "POST",
+          "Credentials": { "Fn::GetAtt":[ "APIGatewayServiceRole", "Arn" ] },
+          "PassthroughBehavior": "WHEN_NO_TEMPLATES",
+          "Uri": {
+            "Fn::Join":[
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref":"AWS::Region"
+                },
+                ":dynamodb:action/Scan"
+              ]
+            ]
+          },
+          "RequestTemplates": {
+            "application/json": "{ 
+\"TableName\": \"ctindel-mb3-review\",
+\"FilterExpression\" : \"productId = :productId\",
+\"ExpressionAttributeValues\" : {\":productId\":{\"S\":\"$input.params('productId')\"}},
+\"Limit\" : 2
+#if($input.params().querystring.keySet().contains('lastEvaluatedKeyId')),
+\"ExclusiveStartKey\": {\"id\" :{ \"S\" : \"$input.params('lastEvaluatedKeyId')\"}}
+#end
+}"
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": 200,
+              "ResponseTemplates": {
+                "application/json": 
+"#set($inputRoot = $input.path('$'))
+{
+#if($inputRoot.LastEvaluatedKey)
+  \"lastEvaluatedKeyId\" : $input.json('$.LastEvaluatedKey.id.S'),
+#end
+  \"reviews\" : [
+#foreach($elem in $inputRoot.Items)
+    {
+      \"id\": \"$elem.id.S\",
+      \"productId\": \"$elem.productId.S\",
+      \"reviewText\": \"$elem.reviewText.S\",
+      \"numStars\": $elem.numStars.N,
+      \"numLikes\": $elem.numLikes.N,
+      \"numDislikes\": $elem.numDislikes.N
+    }#if($foreach.hasNext),
+#end
+#end
+  ]
+}"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "APIGatewayServiceProxyPostReviewByProductIdMethod": {
+      "Type" : "AWS::ApiGateway::Method",
+      "Properties" : {
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ResourceId": { "Ref" : "APIGatewayServiceProxyProductProductIdReviewResource" },
+        "HttpMethod": "POST",
+        "AuthorizationType": "NONE",
+        "MethodResponses": [
+          { 
+            "ResponseModels": {"application/json":"Empty"},
+            "StatusCode" : 200 
+          }
+        ],
+        "Integration": {
+          "Type": "AWS",
+          "IntegrationHttpMethod": "POST",
+          "Credentials": { "Fn::GetAtt":[ "APIGatewayServiceRole", "Arn" ] },
+          "PassthroughBehavior": "WHEN_NO_TEMPLATES",
+          "Uri": {
+            "Fn::Join":[
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref":"AWS::Region"
+                },
+                ":dynamodb:action/PutItem"
+              ]
+            ]
+          },
+          "RequestTemplates": {
+            "application/json": "{ \"TableName\": \"ctindel-mb3-review\", \"Item\": { \"id\": { \"S\": \"$context.requestId\" }, \"productId\": { \"S\": \"$input.params('productId')\" }, \"reviewText\": { \"S\": \"$input.path('$.reviewText')\" }, \"numStars\": { \"N\": \"$input.path('$.numStars')\"}, \"numLikes\": { \"N\": \"0\"}, \"numDislikes\": { \"N\": \"0\"} } }"
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": 200,
+              "ResponseTemplates": {
+                "application/json": "{\"id\": \"$context.requestId\" }"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "APIGatewayServiceProxyGetReviewByIdMethod": {
+      "Type" : "AWS::ApiGateway::Method",
+      "Properties" : {
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ResourceId": { "Ref" : "APIGatewayServiceProxyReviewReviewIdResource" },
+        "HttpMethod": "GET",
+        "AuthorizationType": "NONE",
+        "MethodResponses": [
+          { 
+            "ResponseModels": {"application/json":"Empty"},
+            "StatusCode" : 200 
+          }
+        ],
+        "Integration": {
+          "Type": "AWS",
+          "IntegrationHttpMethod": "POST",
+          "Credentials": { "Fn::GetAtt":[ "APIGatewayServiceRole", "Arn" ] },
+          "PassthroughBehavior": "WHEN_NO_TEMPLATES",
+          "Uri": {
+            "Fn::Join":[
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref":"AWS::Region"
+                },
+                ":dynamodb:action/GetItem"
+              ]
+            ]
+          },
+          "RequestTemplates": {
+            "application/json": "{ \"TableName\": \"ctindel-mb3-review\", \"Key\": { \"id\": { \"S\": \"$input.params('reviewId')\" } } }"
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": 200,
+              "ResponseTemplates": {
+                "application/json": "{\"id\": \"$input.path('$.Item.id.S')\", \"productId\": \"$input.path('$.Item.productId.S')\", \"reviewText\": \"$input.path('$.Item.reviewText.S')\", \"numLikes\": $input.path('$.Item.numLikes.N'), \"numDislikes\": $input.path('$.Item.numDislikes.N'), \"numStars\": $input.path('$.Item.numStars.N') }"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "APIGatewayServiceProxyPostReviewLikeByReviewIdMethod": {
+      "Type" : "AWS::ApiGateway::Method",
+      "Properties" : {
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ResourceId": { "Ref" : "APIGatewayServiceProxyReviewReviewIdLikeResource" },
+        "HttpMethod": "POST",
+        "AuthorizationType": "NONE",
+        "MethodResponses": [
+          { 
+            "ResponseModels": {"application/json":"Empty"},
+            "StatusCode" : 200 
+          }
+        ],
+        "Integration": {
+          "Type": "AWS",
+          "IntegrationHttpMethod": "POST",
+          "Credentials": { "Fn::GetAtt":[ "APIGatewayServiceRole", "Arn" ] },
+          "PassthroughBehavior": "WHEN_NO_TEMPLATES",
+          "Uri": {
+            "Fn::Join":[
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref":"AWS::Region"
+                },
+                ":dynamodb:action/UpdateItem"
+              ]
+            ]
+          },
+          "RequestTemplates": {
+            "application/json": "{ \"TableName\": \"ctindel-mb3-review\", \"Key\": { \"id\": { \"S\": \"$input.params('reviewId')\" } }, \"UpdateExpression\" : \"SET numLikes = numLikes + :incr\", \"ExpressionAttributeValues\": {\":incr\":{\"N\":\"1\"}}, \"ReturnValues\": \"ALL_NEW\" } "
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": 200,
+              "ResponseTemplates": {
+                "application/json": "{\"id\": \"$input.path('$.Attributes.id.S')\", \"productId\": \"$input.path('$.Attributes.productId.S')\", \"reviewText\": \"$input.path('$.Attributes.reviewText.S')\", \"numLikes\": $input.path('$.Attributes.numLikes.N'), \"numDislikes\": $input.path('$.Attributes.numDislikes.N'), \"numStars\": $input.path('$.Attributes.numStars.N') }"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "APIGatewayServiceProxyGetOrderByIdMethod": {
+      "Type" : "AWS::ApiGateway::Method",
+      "Properties" : {
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ResourceId": { "Ref" : "APIGatewayServiceProxyOrderOrderIdResource" },
+        "HttpMethod": "GET",
+        "AuthorizationType": "NONE",
+        "MethodResponses": [
+          { 
+            "ResponseModels": {"application/json":"Empty"},
+            "StatusCode" : 200 
+          }
+        ],
+        "Integration": {
+          "Type": "AWS",
+          "IntegrationHttpMethod": "POST",
+          "Credentials": { "Fn::GetAtt":[ "APIGatewayServiceRole", "Arn" ] },
+          "PassthroughBehavior": "WHEN_NO_TEMPLATES",
+          "Uri": {
+            "Fn::Join":[
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref":"AWS::Region"
+                },
+                ":dynamodb:action/GetItem"
+              ]
+            ]
+          },
+          "RequestTemplates": {
+            "application/json": "{ \"TableName\": \"ctindel-mb3-order\", \"Key\": { \"id\": { \"S\": \"$input.params('orderId')\" } } }"
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": 200,
+              "ResponseTemplates": {
+                "application/json": "
+#set($inputRoot = $input.path('$'))
+{
+  \"id\": \"$input.path('$.Item.id.S')\",
+  \"name\": \"$input.path('$.Item.name.S')\",
+  \"address\": \"$input.path('$.Item.address.S')\",
+  \"orderDate\": \"$input.path('$.Item.orderDate.S')\",
+  \"status\": \"$input.path('$.Item.status.S')\",
+  \"products\" : [
+#foreach($elem in $inputRoot.Item.products.L)
+    {
+      \"productId\": \"$elem.M.productId.S\",
+      \"count\": \"$elem.M.count.N\"
+    }#if($foreach.hasNext),
+#end
+#end
+  ]
+}
+"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "APIGatewayServiceProxyPostReviewDislikeByReviewIdMethod": {
+      "Type" : "AWS::ApiGateway::Method",
+      "Properties" : {
+        "RestApiId": { "Ref" : "APIGateway" },
+        "ResourceId": { "Ref" : "APIGatewayServiceProxyReviewReviewIdDislikeResource" },
+        "HttpMethod": "POST",
+        "AuthorizationType": "NONE",
+        "MethodResponses": [
+          { 
+            "ResponseModels": {"application/json":"Empty"},
+            "StatusCode" : 200 
+          }
+        ],
+        "Integration": {
+          "Type": "AWS",
+          "IntegrationHttpMethod": "POST",
+          "Credentials": { "Fn::GetAtt":[ "APIGatewayServiceRole", "Arn" ] },
+          "PassthroughBehavior": "WHEN_NO_TEMPLATES",
+          "Uri": {
+            "Fn::Join":[
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref":"AWS::Region"
+                },
+                ":dynamodb:action/UpdateItem"
+              ]
+            ]
+          },
+          "RequestTemplates": {
+            "application/json": "{ \"TableName\": \"ctindel-mb3-review\", \"Key\": { \"id\": { \"S\": \"$input.params('reviewId')\" } }, \"UpdateExpression\" : \"SET numDislikes = numDislikes + :incr\", \"ExpressionAttributeValues\": {\":incr\":{\"N\":\"1\"}}, \"ReturnValues\": \"ALL_NEW\" } "
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": 200,
+              "ResponseTemplates": {
+                "application/json": "{\"id\": \"$input.path('$.Attributes.id.S')\", \"productId\": \"$input.path('$.Attributes.productId.S')\", \"reviewText\": \"$input.path('$.Attributes.reviewText.S')\", \"numikes\": $input.path('$.Attributes.numLikes.N'), \"numDislikes\": $input.path('$.Attributes.numDislikes.N'), \"numStars\": $input.path('$.Attributes.numStars.N') }"
               }
             }
           ]
@@ -374,7 +755,7 @@
               "AWS": { "Fn::GetAtt" : ["LambdaRole", "Arn"] }
             },
             "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-2:284628898641:domain/ctindel-mb3-es/*"
+            "Resource": "arn:aws:es:us-east-2:284628898641:domain/ctindel-mb3-es2/*"
           }]
         },
         "AdvancedOptions": {
