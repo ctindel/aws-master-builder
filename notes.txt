@@ -1,0 +1,262 @@
+GET /product/{productId}
+
+Request Template
+
+{
+  "TableName": "ctindel-mb3-product",
+  "Key": {
+    "id": {
+      "S": "$input.params('productId')"
+    }
+  }
+}
+
+Response Template
+
+{
+  "id": "$input.path('$.Item.id.S')",
+  "description": "$input.path('$.Item.description.S')",
+  "numReviews": "$input.path('$.Item.numReviews.N')",
+  "inventory": "$input.path('$.Item.inventory.N')"
+}
+
+curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/product/5c6df3f4afdf244a7f5f71c7
+
+GET /product/{productId}/reviews
+
+aws dynamodb scan \
+  --table-name ctindel-mb3-review \
+  --filter-expression "productId = :productId" \
+  --expression-attribute-values '{":productId":{"S":"5c6df3f4afdf244a7f5f71c7"}}' \
+  --limit 2
+
+aws dynamodb scan \
+  --table-name ctindel-mb3-review \
+  --filter-expression "productId = :productId" \
+  --expression-attribute-values '{":productId":{"S":"5c6df3f4afdf244a7f5f71c7"}}' \
+  --limit 2 \ 
+  --exclusive-start-key '{"id" : { "S" : "5c6df401d9ecd94a8bf8f1cc" }}'
+
+Request Template
+
+{ 
+  "TableName": "ctindel-mb3-review",
+  "FilterExpression" : "productId = :productId",
+  "ExpressionAttributeValues" : {":productId":{"S":"$input.params('productId')"}},
+  "Limit" : 2 
+#if($input.params().querystring.keySet().contains('lastEvaluatedKeyId')),
+"ExclusiveStartKey": {"id" :{ "S" : "$input.params('lastEvaluatedKeyId')"}}
+#end
+}
+
+Response Template
+
+#set($inputRoot = $input.path('$'))
+{
+#if($inputRoot.LastEvaluatedKey)
+  "lastEvaluatedKeyId" : $input.json('$.LastEvaluatedKey.id.S'),
+#end
+  "reviews" : [
+#foreach($elem in $inputRoot.Items)
+    {
+      "id": "$elem.id.S", 
+      "productId": "$elem.productId.S", 
+      "reviewText": "$elem.reviewText.S",
+      "numStars": $elem.numStars.N, 
+      "numLikes": $elem.numLikes.N, 
+      "numDislikes": $elem.numDislikes.N
+    }#if($foreach.hasNext),
+#end
+#end
+  ]
+}
+
+curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/product/5c6df3f4afdf244a7f5f71c7/reviews
+
+curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/product/5c6df3f4afdf244a7f5f71c7/reviews?lastEvaluatedKeyId=5c6df401d9ecd94a8bf8f1cc
+
+POST /product/{productId}/review
+
+Request Template
+
+{
+    "TableName": "ctindel-mb3-review",
+    "Item": {
+	    "id": {
+            "S": "$context.requestId"
+        },
+        "productId": {
+            "S": "$input.params('productId')"
+        },
+        "reviewText": {
+            "S": "$input.path('$.reviewText')"
+        },
+        "numStars": {
+            "N": "$input.path('$.numStars')"
+        },
+        "numLines": {
+            "N": "0"
+        },
+        "numDislikes": {
+            "N": "0"
+        }
+    },
+    "ReturnValues": "ALL_NEW"
+}
+
+Response Template
+
+{
+    "id": "$context.requestId"
+}
+
+curl -s -XPOST -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/product/5c6df3f4afdf244a7f5f71c7/review -d '{ "reviewText": "blah", "numStars": 4 }'
+
+GET /review/{reviewId}
+
+Request Template
+
+{
+  "TableName": "ctindel-mb3-review",
+  "Key": {
+    "id": {
+      "S": "$input.params('reviewId')"
+    }
+  }
+}
+
+Response Template
+
+{
+  "id": "$input.path('$.Item.id.S')",
+  "productId": "$input.path('$.Item.productId.S')",
+  "reviewText": $input.path('$.Item.reviewText.N'),
+  "numLikes": $input.path('$.Item.numLikes.N'),
+  "numDislikes": $input.path('$.Item.numDislikes.N'),
+  "numStars": $input.path('$.Item.numStars.N')
+}
+
+curl -s -XGET -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/review/b7aa95f6-3a08-11e9-97a4-1196c6003db1
+
+POST /review/{reviewId}/like
+
+aws dynamodb update-item \
+    --table-name ctindel-mb3-review \
+    --key '{"id": { "S": "727f9086-3a09-11e9-a3bc-1b36f0f3cecf" }}' \
+    --update-expression "SET numLikes = numLikes + :incr" \
+    --expression-attribute-values '{":incr":{"N":"1"}}' \
+    --return-values ALL_NEW
+
+Request Template
+
+{
+    "TableName": "ctindel-mb3-review",
+    "Key": {
+	    "id": {
+            "S": "$input.params('reviewId')"
+        }
+    },
+    "UpdateExpression" : "SET numLikes = numLikes + :incr",
+    "ExpressionAttributeValues": {":incr":{"N":"1"}},
+    "ReturnValues": "ALL_NEW"
+}
+
+Response Template
+
+{
+  "id": "$input.path('$.Attributes.id.S')",
+  "productId": "$input.path('$.Attributes.productId.S')",
+  "reviewText": $input.path('$.Attributes.reviewText.N'),
+  "numLikes": $input.path('$.Attributes.numLikes.N'),
+  "numDislikes": $input.path('$.Attributes.numDislikes.N'),
+  "numStars": $input.path('$.Attributes.numStars.N')
+}
+
+curl -s -XPOST -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/review/727f9086-3a09-11e9-a3bc-1b36f0f3cecf/like
+
+POST /review/{reviewId}/dislike
+
+aws dynamodb update-item \
+    --table-name ctindel-mb3-review \
+    --key '{"id": { "S": "727f9086-3a09-11e9-a3bc-1b36f0f3cecf" }}' \
+    --update-expression "SET numDislikes = numDislikes + :incr" \
+    --expression-attribute-values '{":incr":{"N":"1"}}' \
+    --return-values ALL_NEW
+
+Request Template
+
+{
+    "TableName": "ctindel-mb3-review",
+    "Key": {
+	    "id": {
+            "S": "$input.params('reviewId')"
+        }
+    },
+    "UpdateExpression" : "SET numDislikes = numDislikes + :incr",
+    "ExpressionAttributeValues": {":incr":{"N":"1"}},
+    "ReturnValues": "ALL_NEW"
+}
+
+Response Template
+
+{
+  "id": "$input.path('$.Attributes.id.S')",
+  "productId": "$input.path('$.Attributes.productId.S')",
+  "reviewText": $input.path('$.Attributes.reviewText.N'),
+  "numLikes": $input.path('$.Attributes.numLikes.N'),
+  "numDislikes": $input.path('$.Attributes.numDislikes.N'),
+  "numStars": $input.path('$.Attributes.numStars.N')
+}
+
+curl -s -XPOST -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/review/727f9086-3a09-11e9-a3bc-1b36f0f3cecf/dislike
+
+GET /search/product
+
+curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/search/product?searchText=sapiente | jq
+
+GET /search/review
+
+curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/search/review?searchText=sapiente | jq
+
+GET /order/{orderId}
+
+aws dynamodb get-item \
+    --table-name ctindel-mb3-order \
+    --key '{"id": { "S": "5c75b75087c435592f231e29" }}' 
+
+Request Template
+
+{
+  "TableName": "ctindel-mb3-order",
+  "Key": {
+    "id": {
+      "S": "$input.params('orderId')"
+    }
+  }
+}
+
+Response Template
+
+#set($inputRoot = $input.path('$'))
+{
+  "id": "$input.path('$.Item.id.S')",
+  "name": "$input.path('$.Item.name.S')",
+  "address": "$input.path('$.Item.address.S')",
+  "orderDate": "$input.path('$.Item.orderDate.S')",
+  "status": "$input.path('$.Item.status.S')",
+  "products" : [
+#foreach($elem in $inputRoot.Item.products)
+    {
+      "productId": "$elem.id.S", 
+      "count": "$elem.count.N"
+    }#if($foreach.hasNext),
+#end
+#end
+  ]
+}
+
+curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/order/5c75b75087c435592f231e29
+
+POST /newOrder
+
+curl -s -XPOST -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/newOrder -d '{ "customerName": "Joe Cool", "customerAddress" : "7 W. 34th Street, New York  NY 10001", "products": [ { "productId": "5c6df3f4afdf244a7f5f71c7", "count": 0 } ] }'
