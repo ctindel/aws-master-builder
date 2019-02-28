@@ -123,6 +123,8 @@ const addProductReview = async () => {
             'numStars' : randomIntFromInterval(1, 5)
         }
     );
+    product.numReviews += 1
+    await product.save()
 }
 
 const addProductInventory = async () => {
@@ -152,12 +154,19 @@ const addOrder = async () => {
         products: []
     }
     products.forEach(function addProduct(product) {
-        order.products.push({
-            productId: product._id,
-            count: randomIntFromInterval(1, 10)
-        });
+        var orderCount = randomIntFromInterval(1, 10);
+        // Don't add this product to the order unless there's enough inventory
+        if (orderCount <= product.inventory) {
+            order.products.push({
+                productId: product._id,
+                count: orderCount
+            });
+        }
     });
-    await OrderModel.create(order);
+    // We only want to add the order if we actually found products with inventory
+    if (order.products.length > 0) {
+        await OrderModel.create(order);
+    }
 }
 
 const changeOrderStatus = async () => {
