@@ -3,6 +3,10 @@ const ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
 const util = require('util');
 const async = require('async');
 
+// DynamoDB Transactions allow 10 objects, so we need to insert an order
+//  object and at most update 9 inventory counts.
+const MAX_PRODUCTS_PER_ORDER = 9; 
+
 function createResponse(status, body) {
   return {
     headers: {
@@ -32,7 +36,7 @@ function checkProductInventory(product, callback) {
             return cb("Required count parameter must be greater than zero");
         }
         var params = {
-            TableName: 'ctindel-mb3-product',
+            TableName: process.env.TARGET_DDB_PRODUCT_TABLE,
             Key: {
                 'id': {'S': product.productId}
             }
@@ -62,14 +66,7 @@ function updateProductInventory(product, callback) {
 
         console.log("Begin updateProductInventory for product: " + JSON.stringify(product));
 
-        var params = {
-            TableName: 'ctindel-mb3-product',
-            Key: {
-                'id': {'S': product.productId}
-            },
-            UpdateExpression: 'SET inventory = inventory - :incr',
-            ExpressionAttributeValues: {":incr":{ "N": product.count.toString() } }
-        };
+        var params = buildUpdateProductObject(product);
         ddb.updateItem(params, function(err, data) {
             if (err) {
                 msg = "Error with updateItem on product id " + product.productId + ": " + err; 
@@ -79,6 +76,38 @@ function updateProductInventory(product, callback) {
             return cb(null);
         });
     }
+}
+
+function buildUpdateProductObject(product) {
+    var params = {
+        TableName: process.env.TARGET_DDB_PRODUCT_TABLE,
+        Key: {
+            'id': {'S': product.productId}
+        },
+        UpdateExpression: 'SET inventory = inventory - :incr',
+        ExpressionAttributeValues: {":incr":{ "N": product.count.toString() } }
+    };
+    return params;
+}
+
+function buildNewOrderObject(id, body) {
+    var newOrder = {
+        'id' : { 'S' : id },
+        'customerName' : { 'S' : body.customerName },
+        'customerAddress' : { 'S' : body.customerAddress },
+        'orderDate' : { 'S' : new Date().toISOString() },
+        'status' : { 'S' : 'placed' },
+        'products' : { 'L' : [ ] }
+    };
+    body.products.forEach(function(product) {
+        newOrder.products.L.push({
+            'M' : { 
+                'productId' : { 'S' : product.productId },
+                'count' : { 'N' : product.count.toString() }
+            }
+        });
+    });
+    return { TableName: process.env.TARGET_DDB_ORDER_TABLE, Item : newOrder};
 }
 
 exports.insertNewDDBOrder = function(event, context, callback) {
@@ -125,44 +154,53 @@ exports.insertNewDDBOrder = function(event, context, callback) {
         }
         msg = "Successfully ran checkInventoryArray"
         console.log(msg);
-        var updateInventoryArray = [];
-        body.products.forEach(function(product) {
-            updateInventoryArray.push(updateProductInventory(product));
-        });
-        async.series(updateInventoryArray, function finalizer(err, results) {
-            if (err) {
-                msg = "Error with updateInventoryArray: " + JSON.stringify(err);
-                console.error(msg);
-                return callback(null, createResponse(404, {"message": msg}))
-            }
-            msg = "Successfully ran updateInventoryArray"
-            console.log(msg);
-            var newOrder = {
-                'id' : { 'S' : event.requestContext.requestId },
-                'customerName' : { 'S' : body.customerName },
-                'customerAddress' : { 'S' : body.customerAddress },
-                'orderDate' : { 'S' : new Date().toISOString() },
-                'status' : { 'S' : 'placed' },
-                'products' : { 'L' : [ ] }
-            };
+        if (body.products.length > MAX_PRODUCTS_PER_ORDER) {
+            var updateInventoryArray = [];
             body.products.forEach(function(product) {
-                newOrder.products.L.push({
-                    'M' : { 
-                        'productId' : { 'S' : product.productId },
-                        'count' : { 'N' : product.count.toString() }
+                updateInventoryArray.push(updateProductInventory(product));
+            });
+            async.series(updateInventoryArray, function finalizer(err, results) {
+                if (err) {
+                    msg = "Error with updateInventoryArray: " + JSON.stringify(err);
+                    console.error(msg);
+                    return callback(null, createResponse(404, {"message": msg}))
+                }
+                msg = "Successfully ran updateInventoryArray"
+                console.log(msg);
+                var newOrderParams = buildNewOrderObject(event.requestContext.requestId, body);
+                console.dir(newOrderParams);
+                ddb.putItem(newOrderParams, function(err, data) {
+                    if (err) {
+                        msg = "Error with putItem: " + JSON.stringify(err);
+                        console.error(msg);
+                        return callback(null, createResponse(404, {"message": msg}))
                     }
+                    return callback(null, createResponse(200, {'id' : event.requestContext.requestId }));
                 });
             });
-            var params = { TableName: process.env.TARGET_DDB_TABLE, Item : newOrder};
+        } else {
+            var transactionArray = [];
+            transactionArray.push({
+                'Put' : buildNewOrderObject(event.requestContext.requestId, body)
+            });
+            body.products.forEach(function(product) {
+                var updateProductObject = buildUpdateProductObject(product);
+                updateProductObject['ConditionExpression'] = '(inventory > :orderCount) and (:orderCount > 0)';
+                updateProductObject['ExpressionAttributeValues'][':orderCount'] = { "N": product.count.toString() };
+                transactionArray.push({
+                    'Update' : buildUpdateProductObject(product)
+                });
+            });
+            var params = { 'TransactItems' : transactionArray };
             console.dir(params);
-            ddb.putItem(params, function(err, data) {
+            ddb.transactWriteItems(params, function(err, data) {
                 if (err) {
-                    msg = "Error with putItem: " + JSON.stringify(err);
+                    msg = "Error with transactWriteItems: " + JSON.stringify(err);
                     console.error(msg);
                     return callback(null, createResponse(404, {"message": msg}))
                 }
                 return callback(null, createResponse(200, {'id' : event.requestContext.requestId }));
             });
-        });
+        }
     });
 }

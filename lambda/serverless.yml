@@ -147,7 +147,8 @@ functions:
   insert-order-dynamodb:
     handler: ddb_order_handler.insertNewDDBOrder
     environment:
-      TARGET_DDB_TABLE: ctindel-mb3-order
+      TARGET_DDB_ORDER_TABLE: ctindel-mb3-order
+      TARGET_DDB_PRODUCT_TABLE: ctindel-mb3-product
     events:
       - http:
           path: /newOrder
