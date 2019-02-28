@@ -1,3 +1,3 @@
 #!/bin/bash
 
-serverless deploy --stage dev --region us-east-2
+serverless deploy --stage prod --region us-east-2

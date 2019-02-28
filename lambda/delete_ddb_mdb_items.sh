@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export MDB_HASH_KEY="oid__id"
-export DDB_HASH_KEY="oid__id"
+export DDB_HASH_KEY="id"
 
 declare -a MDB_TABLES=(
     "product" 

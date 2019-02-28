@@ -14,13 +14,38 @@ basePath: /v1
 tags:
   - name: product
     description: Operations on products
+  - name: review
+    description: Operations on reviews
   - name: order
     description: Access to orders
 schemes:
   - https
   - http
 paths:
-  /order:
+  '/order/{orderId}':
+    get:
+      tags:
+        - order
+      description: >-
+        Returns a single order
+      operationId: findOrderById
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order
+          required: true
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Order Response
+          schema:
+            $ref: '#/definitions/Order'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+  /newOrder:
     post:
       tags:
         - order
@@ -37,7 +62,7 @@ paths:
           description: New Order Request
           required: true
           schema:
-            $ref: '#/definitions/Order'
+            $ref: '#/definitions/NewOrder'
       responses:
         '201': {
             description: 'Successfully added',
@@ -47,40 +72,6 @@ paths:
           }
         '405':
           description: Invalid input
-  /order/findByStatus:
-    get:
-      tags:
-        - order
-      summary: Finds Order by status
-      description: Multiple status values can be provided with comma separated strings
-      operationId: findOrdersByStatus
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - name: status
-          in: query
-          description: Status values that need to be considered for filter
-          required: true
-          type: array
-          items:
-            type: string
-            enum:
-              - available
-              - pending
-              - sold
-            default: available
-          collectionFormat: multi
-      responses:
-        '200':
-          description: successful operation
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Order'
-        '400':
-          description: Invalid status value
   '/product/{productId}':
     get:
       tags:
@@ -153,35 +144,70 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: productId
-          in: path
+        - in: path 
+          name: productId
           description: ID of product
           required: true
           type: string
           format: uuid
-        - name: pageNum
-          in: query
-          description: Page number of reviews to get
-          required: true
-          type: integer
-          minimum: 1
-          maximum: 5
+        - in: query
+          name: lastEvaluatedKeyId
+          description: Last Evaluated Key from prior paginated call
+          required: false
+          type: string
       responses:
         '200':
-          description: Product Response
+          description: Product Review Array Response
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/ProductReview'
+            type: object
+            properties:
+              lastEvaluatedKeyId:
+                type: string
+                example: "5c6df401d9ecd94a8bf8f1cc"
+              reviews:
+                type: array
+                items:
+                  $ref: '#/definitions/ProductReview'
         default:
           description: unexpected error
           schema:
             $ref: '#/definitions/ApiResponse'
-
-  '/product/{productId}/review/{reviewId}':
+  '/search/product':
     get:
       tags:
         - product
+      description: >-
+        Search all products
+      operationId: searchProducts
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: searchText
+          in: query
+          description: Search text for all products
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Product Response
+          schema:
+            type: object
+            properties:
+              products:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/Product'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+  '/review/{reviewId}':
+    get:
+      tags:
+        - review
       description: >-
         Returns a single review for a single product
       operationId: findProductReviewById
@@ -207,10 +233,10 @@ paths:
           description: unexpected error
           schema:
             $ref: '#/definitions/ApiResponse'
-  '/product/{productId}/review/{reviewId}/like':
+  '/review/{reviewId}/like':
     post:
       tags:
-        - product
+        - review
       description: >-
         Add a like to a product review
       operationId: likeProductReviewById
@@ -236,10 +262,10 @@ paths:
           description: unexpected error
           schema:
             $ref: '#/definitions/ApiResponse'
-  '/product/{productId}/review/{reviewId}/dislike':
+  '/review/{reviewId}/dislike':
     post:
       tags:
-        - product
+        - review
       description: >-
         Add a dislike to a product review
       operationId: dislikeProductReviewById
@@ -265,10 +291,10 @@ paths:
           description: unexpected error
           schema:
             $ref: '#/definitions/ApiResponse'
-  '/product/reviews/search':
+  '/search/review':
     get:
       tags:
-        - product
+        - review
       description: >-
         Search all product reviews
       operationId: searchProductReviews
@@ -286,14 +312,13 @@ paths:
         '200':
           description: Product Response
           schema:
-            type: array
-            items:
-                type: object
-                properties:
-                  product:
-                    $ref: '#/definitions/Product'
-                  review:
-                    $ref: '#/definitions/ProductReview'
+            type: object
+            properties:
+              reviews:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/ProductReview'
         default:
           description: unexpected error
           schema:
@@ -305,7 +330,6 @@ definitions:
       - $ref: '#/definitions/NewOrder'
     required:
       - id
-      - customerName
       - orderDate
       - products
     properties:
@@ -331,6 +355,9 @@ definitions:
       customerName:
         type: string
         example: Joe Cool
+      customerAddress:
+        type: string
+        example: 7 W. 34th Street, New York  NY 10001
       products:
         type: array
         items:
@@ -341,12 +368,15 @@ definitions:
               format: uuid
             count:
               type: integer
+              example: 3
   Product:
     type: object
     properties:
-      productId:
+      id:
         type: string
         format: uuid
+      description:
+        type: string
       numReviews:
         type: number
   ProductReview:
@@ -354,6 +384,9 @@ definitions:
     allOf:
       - $ref: '#/definitions/NewProductReview'
     properties:
+      id:
+        type: string
+        format: uuid
       numLikes:
         type: integer
       numDislikes:
@@ -376,6 +409,18 @@ definitions:
         minimum: 1
         maximum: 5
         example: 3
+  LastEvaluatedKey:
+    type: object
+    properties:
+      id:
+        type: object
+        properties:
+          S:
+            type: string
+    example:
+      id:
+        S:
+          5c6df401d9ecd94a8bf8f1cc
   ApiResponse:
     type: object
     properties:

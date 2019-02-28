@@ -13,7 +13,7 @@ async function search() {
     await es.ping();
 
     const response = await es.search({
-      index: 'product',
+      index: 'review',
       type: '_doc',
       body: {
         query: {
@@ -23,7 +23,7 @@ async function search() {
     })
     
     for (const product of response.hits.hits) {
-      console.log('product:', product);
+      console.log('review:', product);
     }
 }
 
