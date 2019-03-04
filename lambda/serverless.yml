@@ -35,6 +35,40 @@ resources:
         TableName: ctindel-mb3-product
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+    ProductDynamoDbTableUEAlarm:
+      Type: 'AWS::CloudWatch::Alarm'
+      Properties:
+        AlarmName: !Join ['', [!Ref ProductDynamoDbTable, '-ue-alarm']]
+        AlarmDescription: 'Alarm when DynamoDB user errors occur'
+        Namespace: 'AWS/DynamoDB'
+        MetricName: 'UserErrors'
+        Dimensions:
+          - 
+            Name: 'TableName'
+            Value: !Ref ProductDynamoDbTable
+        Statistic: 'Sum'
+        Threshold: 0
+        ComparisonOperator: 'GreaterThanThreshold'
+        Period: 60
+        Unit: 'Count'
+        EvaluationPeriods: 1
+    ProductDynamoDbTableSEAlarm:
+      Type: 'AWS::CloudWatch::Alarm'
+      Properties:
+        AlarmName: !Join ['', [!Ref ProductDynamoDbTable, '-se-alarm']]
+        AlarmDescription: 'Alarm when DynamoDB system errors occur'
+        Namespace: 'AWS/DynamoDB'
+        MetricName: 'SystemErrors'
+        Dimensions:
+          - 
+            Name: 'TableName'
+            Value: !Ref ProductDynamoDbTable
+        Statistic: 'Sum'
+        Threshold: 0
+        ComparisonOperator: 'GreaterThanThreshold'
+        Period: 60
+        Unit: 'Count'
+        EvaluationPeriods: 1
     ReviewDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
       #DeletionPolicy: Retain
@@ -51,6 +85,40 @@ resources:
         TableName: ctindel-mb3-review
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+    ReviewDynamoDbTableUEAlarm:
+      Type: 'AWS::CloudWatch::Alarm'
+      Properties:
+        AlarmName: !Join ['', [!Ref ReviewDynamoDbTable, '-ue-alarm']]
+        AlarmDescription: 'Alarm when DynamoDB user errors occur'
+        Namespace: 'AWS/DynamoDB'
+        MetricName: 'UserErrors'
+        Dimensions:
+          - 
+            Name: 'TableName'
+            Value: !Ref ReviewDynamoDbTable
+        Statistic: 'Sum'
+        Threshold: 0
+        ComparisonOperator: 'GreaterThanThreshold'
+        Period: 60
+        Unit: 'Count'
+        EvaluationPeriods: 1
+    ReviewDynamoDbTableSEAlarm:
+      Type: 'AWS::CloudWatch::Alarm'
+      Properties:
+        AlarmName: !Join ['', [!Ref ReviewDynamoDbTable, '-se-alarm']]
+        AlarmDescription: 'Alarm when DynamoDB system errors occur'
+        Namespace: 'AWS/DynamoDB'
+        MetricName: 'SystemErrors'
+        Dimensions:
+          - 
+            Name: 'TableName'
+            Value: !Ref ReviewDynamoDbTable
+        Statistic: 'Sum'
+        Threshold: 0
+        ComparisonOperator: 'GreaterThanThreshold'
+        Period: 60
+        Unit: 'Count'
+        EvaluationPeriods: 1
     OrderDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
       #DeletionPolicy: Retain
@@ -67,6 +135,40 @@ resources:
         TableName: ctindel-mb3-order
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+    OrderDynamoDbTableUEAlarm:
+      Type: 'AWS::CloudWatch::Alarm'
+      Properties:
+        AlarmName: !Join ['', [!Ref OrderDynamoDbTable, '-ue-alarm']]
+        AlarmDescription: 'Alarm when DynamoDB user errors occur'
+        Namespace: 'AWS/DynamoDB'
+        MetricName: 'UserErrors'
+        Dimensions:
+          - 
+            Name: 'TableName'
+            Value: !Ref OrderDynamoDbTable
+        Statistic: 'Sum'
+        Threshold: 0
+        ComparisonOperator: 'GreaterThanThreshold'
+        Period: 60
+        Unit: 'Count'
+        EvaluationPeriods: 1
+    OrderDynamoDbTableSEAlarm:
+      Type: 'AWS::CloudWatch::Alarm'
+      Properties:
+        AlarmName: !Join ['', [!Ref OrderDynamoDbTable, '-se-alarm']]
+        AlarmDescription: 'Alarm when DynamoDB system errors occur'
+        Namespace: 'AWS/DynamoDB'
+        MetricName: 'SystemErrors'
+        Dimensions:
+          - 
+            Name: 'TableName'
+            Value: !Ref OrderDynamoDbTable
+        Statistic: 'Sum'
+        Threshold: 0
+        ComparisonOperator: 'GreaterThanThreshold'
+        Period: 60
+        Unit: 'Count'
+        EvaluationPeriods: 1
 
 functions:
   product-mdb-dynamodb:
