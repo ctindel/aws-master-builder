@@ -48,7 +48,7 @@ function checkProductInventory(product, callback) {
                 return cb(msg);
             }
             console.dir(data);
-            if (data.Item.inventory < product.count) {
+            if (data.Item.inventory.N < product.count) {
                 msg = "Requested count " + product.count + 
                     " for productId " + product.productId + 
                     "exceeds available inventory of " + data.Item.inventory;; 

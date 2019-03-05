@@ -380,18 +380,19 @@
                 {
                   "Ref":"AWS::Region"
                 },
-                ":dynamodb:action/Scan"
+                ":dynamodb:action/Query"
               ]
             ]
           },
           "RequestTemplates": {
             "application/json": "{ 
 \"TableName\": \"ctindel-mb3-review\",
-\"FilterExpression\" : \"productId = :productId\",
+\"KeyConditionExpression\" : \"productId = :productId\",
 \"ExpressionAttributeValues\" : {\":productId\":{\"S\":\"$input.params('productId')\"}},
+\"IndexName\" : \"ReviewProductIdIndex\",
 \"Limit\" : 2
 #if($input.params().querystring.keySet().contains('lastEvaluatedKeyId')),
-\"ExclusiveStartKey\": {\"id\" :{ \"S\" : \"$input.params('lastEvaluatedKeyId')\"}}
+\"ExclusiveStartKey\": {\"id\" :{ \"S\" : \"$input.params('lastEvaluatedKeyId')\"}, \"productId\" :{ \"S\" : \"$input.params('productId')\"}}
 #end
 }"
           },
@@ -598,8 +599,8 @@
 #set($inputRoot = $input.path('$'))
 {
   \"id\": \"$input.path('$.Item.id.S')\",
-  \"name\": \"$input.path('$.Item.name.S')\",
-  \"address\": \"$input.path('$.Item.address.S')\",
+  \"customerName\": \"$input.path('$.Item.customerName.S')\",
+  \"customerAddress\": \"$input.path('$.Item.customerAddress.S')\",
   \"orderDate\": \"$input.path('$.Item.orderDate.S')\",
   \"status\": \"$input.path('$.Item.status.S')\",
   \"products\" : [
