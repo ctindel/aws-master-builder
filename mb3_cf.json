@@ -599,8 +599,8 @@
 #set($inputRoot = $input.path('$'))
 {
   \"id\": \"$input.path('$.Item.id.S')\",
-  \"name\": \"$input.path('$.Item.name.S')\",
-  \"address\": \"$input.path('$.Item.address.S')\",
+  \"customerName\": \"$input.path('$.Item.customerName.S')\",
+  \"customerAddress\": \"$input.path('$.Item.customerAddress.S')\",
   \"orderDate\": \"$input.path('$.Item.orderDate.S')\",
   \"status\": \"$input.path('$.Item.status.S')\",
   \"products\" : [
