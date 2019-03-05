@@ -296,16 +296,21 @@ paths:
       tags:
         - review
       description: >-
-        Search all product reviews
+        Search product reviews for a single product
       operationId: searchProductReviews
       consumes:
         - application/json
       produces:
         - application/json
       parameters:
+        - name: productId
+          in: query
+          description: Product ID to search reviews of
+          required: true
+          type: string
         - name: searchText
           in: query
-          description: Search review text for all products
+          description: Search review text
           required: true
           type: string
       responses:

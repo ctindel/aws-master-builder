@@ -28,20 +28,37 @@ aws dynamodb scan \
   --table-name ctindel-mb3-review \
   --filter-expression "productId = :productId" \
   --expression-attribute-values '{":productId":{"S":"5c6df3f4afdf244a7f5f71c7"}}' \
+  --index-name ReviewProductIdIndex \
   --limit 2
 
 aws dynamodb scan \
   --table-name ctindel-mb3-review \
   --filter-expression "productId = :productId" \
   --expression-attribute-values '{":productId":{"S":"5c6df3f4afdf244a7f5f71c7"}}' \
+  --index-name ReviewProductIdIndex \
   --limit 2 \ 
   --exclusive-start-key '{"id" : { "S" : "5c6df401d9ecd94a8bf8f1cc" }}'
+
+aws dynamodb query \
+  --table-name ctindel-mb3-review \
+  --key-condition-expression "productId = :productId" \
+  --expression-attribute-values '{":productId":{"S":"5c6df3f4afdf244a7f5f71c7"}}' \
+  --index-name ReviewProductIdIndex \
+  --limit 2
+
+aws dynamodb query \
+  --table-name ctindel-mb3-review \
+  --key-condition-expression "productId = :productId" \
+  --expression-attribute-values '{":productId":{"S":"5c6df3f4afdf244a7f5f71c7"}}' \
+  --limit 2 \
+  --index-name ReviewProductIdIndex \
+  --exclusive-start-key '{"id": { "S": "5c6df401d9ecd94a8bf8f1cc" }, "productId" : { "S" : "5c6df3f4afdf244a7f5f71c7" }}'
 
 Request Template
 
 { 
   "TableName": "ctindel-mb3-review",
-  "FilterExpression" : "productId = :productId",
+  "KeyConditionExpression" : "productId = :productId",
   "ExpressionAttributeValues" : {":productId":{"S":"$input.params('productId')"}},
   "Limit" : 2 
 #if($input.params().querystring.keySet().contains('lastEvaluatedKeyId')),
@@ -216,7 +233,7 @@ curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.
 
 GET /search/review
 
-curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/search/review?searchText=sapiente | jq
+curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/search/review?productId=5c6df3f4afdf244a7f5f71c7\&searchText=voluptatem | jq
 
 GET /order/{orderId}
 
@@ -259,4 +276,4 @@ curl -s -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.
 
 POST /newOrder
 
-curl -s -XPOST -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/newOrder -d '{ "customerName": "Joe Cool", "customerAddress" : "7 W. 34th Street, New York  NY 10001", "products": [ { "productId": "5c6df3f4afdf244a7f5f71c7", "count": 0 } ] }'
+curl -s -XPOST -H 'Content-Type: application/json' https://ctindel-mb3-api.ctindel-aws.com/newOrder -d '{ "customerName": "Joe Cool", "customerAddress" : "7 W. 34th Street, New York  NY 10001", "products": [ { "productId": "5c6df3f4afdf244a7f5f71c7", "count": 2 } ] }'
