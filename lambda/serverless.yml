@@ -77,6 +77,9 @@ resources:
           -
             AttributeName: id
             AttributeType: S
+          -
+            AttributeName: productId
+            AttributeType: S
         KeySchema:
           -
             AttributeName: id
@@ -85,6 +88,13 @@ resources:
         TableName: ctindel-mb3-review
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+        GlobalSecondaryIndexes:
+          - IndexName: ReviewProductIdIndex
+            KeySchema:
+              - AttributeName: productId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
     ReviewDynamoDbTableUEAlarm:
       Type: 'AWS::CloudWatch::Alarm'
       Properties:

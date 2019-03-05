@@ -380,18 +380,19 @@
                 {
                   "Ref":"AWS::Region"
                 },
-                ":dynamodb:action/Scan"
+                ":dynamodb:action/Query"
               ]
             ]
           },
           "RequestTemplates": {
             "application/json": "{ 
 \"TableName\": \"ctindel-mb3-review\",
-\"FilterExpression\" : \"productId = :productId\",
+\"KeyConditionExpression\" : \"productId = :productId\",
 \"ExpressionAttributeValues\" : {\":productId\":{\"S\":\"$input.params('productId')\"}},
+\"IndexName\" : \"ReviewProductIdIndex\",
 \"Limit\" : 2
 #if($input.params().querystring.keySet().contains('lastEvaluatedKeyId')),
-\"ExclusiveStartKey\": {\"id\" :{ \"S\" : \"$input.params('lastEvaluatedKeyId')\"}}
+\"ExclusiveStartKey\": {\"id\" :{ \"S\" : \"$input.params('lastEvaluatedKeyId')\"}, \"productId\" :{ \"S\" : \"$input.params('productId')\"}}
 #end
 }"
           },

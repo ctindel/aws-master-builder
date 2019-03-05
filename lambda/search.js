@@ -17,7 +17,12 @@ async function search() {
       type: '_doc',
       body: {
         query: {
-          match_all: {}
+          bool: {
+            must: [
+              { term: { productId: "5c6df3f4afdf244a7f5f71c7" }},
+              { term: { reviewText: "voluptatem" }},
+            ]
+          }
         }
       }
     })

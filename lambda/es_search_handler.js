@@ -20,7 +20,13 @@ exports.esReviewSearchHandler = function(event, context, callback) {
 
     console.log(event); // Contains incoming request data (e.g., query params, headers and more)
 
-    if (!event.queryStringParameters || !event.queryStringParameters.hasOwnProperty('searchText')) {
+    if (!event.queryStringParameters || !event.queryStringParameters.hasOwnProperty('productId')) {
+        msg = "Missing Required Query String Parameter productId";
+        console.error(msg); 
+        return callback(null, createResponse(404, {"message": msg}))
+    }
+
+    if (!event.queryStringParameters.hasOwnProperty('searchText')) {
         msg = "Missing Required Query String Parameter searchText";
         console.error(msg); 
         return callback(null, createResponse(404, {"message": msg}))
@@ -41,7 +47,17 @@ exports.esReviewSearchHandler = function(event, context, callback) {
         es.search({
           index: 'review',
           type: '_doc',
-          q: event.queryStringParameters.searchText
+//          body: {
+//              query: {
+//                  bool: {
+//                      must: [
+//                          { term: { productId: event.queryStringParameters.productId }},
+//                          { term: { reviewText: event.queryStringParameters.searchText }},
+//                      ]
+//                  }
+//              }
+//          }
+          q: event.queryStringParameters.searchText + ' AND productId:' + event.queryStringParameters.productId
         }, function(err, response) {
             if (err) {
                 msg = "Elasticsearch error: " +
