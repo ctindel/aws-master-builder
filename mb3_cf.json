@@ -794,6 +794,24 @@
           "EvaluateTargetHealth": "false"
         }
       }
+    },
+    "SNSMonitoringTopic": {
+      "Type" : "AWS::SNS::Topic",
+      "Properties" : {
+        "Subscription" : [ {
+            "Endpoint" : "ctindel@amazon.com",
+            "Protocol" : "email"
+        } ],
+        "TopicName" : {
+          "Fn::Join":[
+            "",
+            [
+              { "Ref":"AWS::StackName" },
+              "-sns"
+            ]
+          ]
+        }
+      }
     }
   },
   "Outputs":{

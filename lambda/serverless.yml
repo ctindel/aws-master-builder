@@ -40,6 +40,8 @@ resources:
       Properties:
         AlarmName: !Join ['', [!Ref ProductDynamoDbTable, '-ue-alarm']]
         AlarmDescription: 'Alarm when DynamoDB user errors occur'
+        AlarmActions:
+          - 'arn:aws:sns:us-east-2:284628898641:ctindel-mb3-sns'
         Namespace: 'AWS/DynamoDB'
         MetricName: 'UserErrors'
         Dimensions:
@@ -57,6 +59,8 @@ resources:
       Properties:
         AlarmName: !Join ['', [!Ref ProductDynamoDbTable, '-se-alarm']]
         AlarmDescription: 'Alarm when DynamoDB system errors occur'
+        AlarmActions:
+          - 'arn:aws:sns:us-east-2:284628898641:ctindel-mb3-sns'
         Namespace: 'AWS/DynamoDB'
         MetricName: 'SystemErrors'
         Dimensions:
@@ -100,6 +104,8 @@ resources:
       Properties:
         AlarmName: !Join ['', [!Ref ReviewDynamoDbTable, '-ue-alarm']]
         AlarmDescription: 'Alarm when DynamoDB user errors occur'
+        AlarmActions:
+          - 'arn:aws:sns:us-east-2:284628898641:ctindel-mb3-sns'
         Namespace: 'AWS/DynamoDB'
         MetricName: 'UserErrors'
         Dimensions:
@@ -117,6 +123,8 @@ resources:
       Properties:
         AlarmName: !Join ['', [!Ref ReviewDynamoDbTable, '-se-alarm']]
         AlarmDescription: 'Alarm when DynamoDB system errors occur'
+        AlarmActions:
+          - 'arn:aws:sns:us-east-2:284628898641:ctindel-mb3-sns'
         Namespace: 'AWS/DynamoDB'
         MetricName: 'SystemErrors'
         Dimensions:
@@ -150,6 +158,8 @@ resources:
       Properties:
         AlarmName: !Join ['', [!Ref OrderDynamoDbTable, '-ue-alarm']]
         AlarmDescription: 'Alarm when DynamoDB user errors occur'
+        AlarmActions:
+          - 'arn:aws:sns:us-east-2:284628898641:ctindel-mb3-sns'
         Namespace: 'AWS/DynamoDB'
         MetricName: 'UserErrors'
         Dimensions:
@@ -167,6 +177,8 @@ resources:
       Properties:
         AlarmName: !Join ['', [!Ref OrderDynamoDbTable, '-se-alarm']]
         AlarmDescription: 'Alarm when DynamoDB system errors occur'
+        AlarmActions:
+          - 'arn:aws:sns:us-east-2:284628898641:ctindel-mb3-sns'
         Namespace: 'AWS/DynamoDB'
         MetricName: 'SystemErrors'
         Dimensions:
